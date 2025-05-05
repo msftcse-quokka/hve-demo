@@ -1,0 +1,18 @@
+{
+    "name": "BSB Checker App",
+    "image": "mcr.microsoft.com/devcontainers/python:latest",
+    "forwardPorts": [8000],
+    "postCreateCommand": "cd bsb_checker_app && pip install -r requirements.txt",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-python.python",
+                "ms-azuretools.vscode-docker",
+                "saoudrizwan.claude-dev",
+                "humao.rest-client",
+                "qwtel.sqlite-viewer"
+            ]
+        }
+    },
+    "remoteUser": "root"
+}
