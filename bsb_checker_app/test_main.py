@@ -116,3 +116,130 @@ def test_get_bsb_details_invalid_format():
     assert response.status_code == 400
     assert response.json() == {"detail": "Invalid BSB format. Use XXX-XXX."}
 
+# --- Test Cases for /banks/filter endpoint ---
+def test_filter_banks_by_name():
+    """Test filtering banks by name."""
+    db = TestingSessionLocal()
+    setup_test_data(db)
+    try:
+        response = client.get("/banks/filter?name=Bank A")
+        assert response.status_code == 200
+        data = response.json()
+        assert "banks" in data
+        assert data["banks"] == ["Bank A"]
+    finally:
+        clear_test_data(db)
+        db.close()
+
+def test_filter_banks_by_name_case_insensitive():
+    """Test filtering banks by name with case-insensitivity."""
+    db = TestingSessionLocal()
+    setup_test_data(db)
+    try:
+        response = client.get("/banks/filter?name=bank a")  # lowercase
+        assert response.status_code == 200
+        data = response.json()
+        assert data["banks"] == ["Bank A"]
+    finally:
+        clear_test_data(db)
+        db.close()
+
+def test_filter_banks_by_name_partial_match():
+    """Test filtering banks by partial name match."""
+    db = TestingSessionLocal()
+    setup_test_data(db)
+    try:
+        response = client.get("/banks/filter?name=Bank")  # partial match
+        assert response.status_code == 200
+        data = response.json()
+        assert set(data["banks"]) == {"Bank A", "Bank B", "Bank C"}
+    finally:
+        clear_test_data(db)
+        db.close()
+
+def test_filter_banks_by_state():
+    """Test filtering banks by state."""
+    db = TestingSessionLocal()
+    setup_test_data(db)
+    try:
+        response = client.get("/banks/filter?state=AS")
+        assert response.status_code == 200
+        data = response.json()
+        assert set(data["banks"]) == {"Bank A"}  # Both Bank A branches are in AS
+    finally:
+        clear_test_data(db)
+        db.close()
+
+def test_filter_banks_by_payments_accepted():
+    """Test filtering banks by payments accepted."""
+    db = TestingSessionLocal()
+    setup_test_data(db)
+    try:
+        response = client.get("/banks/filter?payments_accepted=All")
+        assert response.status_code == 200
+        data = response.json()
+        assert set(data["banks"]) == {"Bank B", "Bank C"}
+    finally:
+        clear_test_data(db)
+        db.close()
+
+def test_filter_banks_multiple_criteria():
+    """Test filtering banks by multiple criteria (combined)."""
+    db = TestingSessionLocal()
+    setup_test_data(db)
+    try:
+        # Both criteria match Bank A
+        response = client.get("/banks/filter?name=Bank A&state=AS")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["banks"] == ["Bank A"]
+        
+        # Filter that should return no results
+        response = client.get("/banks/filter?name=Bank A&payments_accepted=All")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["banks"] == []  # No Bank A has 'All' payment types
+    finally:
+        clear_test_data(db)
+        db.close()
+
+def test_filter_banks_no_parameters():
+    """Test filtering banks with no parameters (should return all banks)."""
+    db = TestingSessionLocal()
+    setup_test_data(db)
+    try:
+        response = client.get("/banks/filter")
+        assert response.status_code == 200
+        data = response.json()
+        assert set(data["banks"]) == {"Bank A", "Bank B", "Bank C"}
+    finally:
+        clear_test_data(db)
+        db.close()
+
+def test_filter_banks_invalid_state():
+    """Test filtering banks with an invalid state code."""
+    db = TestingSessionLocal()
+    setup_test_data(db)
+    try:
+        response = client.get("/banks/filter?state=INVALID")
+        assert response.status_code == 400
+        data = response.json()
+        assert "detail" in data
+        assert "Invalid state code" in data["detail"]
+    finally:
+        clear_test_data(db)
+        db.close()
+
+def test_filter_banks_state_case_insensitive():
+    """Test that state filtering is case-insensitive."""
+    db = TestingSessionLocal()
+    setup_test_data(db)
+    try:
+        response = client.get("/banks/filter?state=as")  # lowercase
+        assert response.status_code == 200
+        data = response.json()
+        assert set(data["banks"]) == {"Bank A"}
+    finally:
+        clear_test_data(db)
+        db.close()
+

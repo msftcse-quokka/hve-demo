@@ -212,6 +212,18 @@ async def filter_banks(
     """
     logger.info(f"Filtering banks with parameters - name: {name}, state: {state}, payments_accepted: {payments_accepted}")
     
+    # Input validation
+    if state and len(state) > 3:
+        raise HTTPException(status_code=400, detail="Invalid state code. State codes should be 2-3 characters.")
+    
+    # Validate state code if provided (ensure it's a valid format)
+    valid_state_codes = ["NSW", "VIC", "QLD", "SA", "WA", "TAS", "NT", "ACT"]
+    if state and state.upper() not in valid_state_codes:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Invalid state code. Valid codes are: {', '.join(valid_state_codes)}"
+        )
+    
     # Start with a base query
     query = db.query(BSBRecord.Bank).distinct()
     
@@ -221,7 +233,7 @@ async def filter_banks(
         query = query.filter(func.lower(BSBRecord.Bank).contains(name.lower()))
     
     if state:
-        # Exact match for state
+        # Exact match for state (already validated)
         query = query.filter(func.upper(BSBRecord.State) == state.upper())
     
     if payments_accepted:
