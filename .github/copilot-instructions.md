@@ -15,22 +15,6 @@ You will only ever follow the subtask that you have created
 - Design code to be testable and modular. Use dependency injection and avoid tight coupling.
 - Ensure code is easy to debug and extend. Use logging and interfaces as needed.
 
-# Observability
-
-- All code must implement clear Observability patterns. Use OpenTelemetry to instrument all code, including HTTP requests, database calls, and key business logic.
-- Export telemetry data (traces, metrics, logs) to an endpoint defined in the application's configuration.
-- Ensure all services and components are traceable end-to-end, with meaningful span names and attributes.
-- Logs must be concise and at the appropriate level. Minimize info logs; prioritize error and warning logs.
-- Include contextual information (such as correlation IDs, user/session info, and request IDs) in logs and traces to aid troubleshooting.
-
-# Unit Testing
-
-- Write unit tests for all new features and significant code changes.
-- Ensure tests are isolated, repeatable, and cover both typical and edge cases.
-- Strive for high code coverage, but prioritize meaningful and maintainable tests over coverage metrics alone.
-- Mock external dependencies and avoid reliance on external systems or state.
-- Name tests clearly to describe their purpose and expected outcome.
-
 # Branching:
 
 - Create a new branch from main before starting any coding task.
