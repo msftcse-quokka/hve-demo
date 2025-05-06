@@ -38,7 +38,7 @@ client = TestClient(app)
 
 # --- Test Data Setup ---
 def setup_test_data(db_session):
-    \"\"\"Helper function to populate the test database.\"\"\"
+    """Helper function to populate the test database."""
     db_session.query(BSBRecord).delete() # Clear existing data
     banks_to_add = [
         BSBRecord(BSB='111-111', Bank='Bank C', Branch='Branch C1', Street='1 C St', Suburb='Cville', State='CS', PostCode='3000', Payments_Accepted='All'),
@@ -50,13 +50,13 @@ def setup_test_data(db_session):
     db_session.commit()
 
 def clear_test_data(db_session):
-    \"\"\"Helper function to clear the test database.\"\"\"
+    """Helper function to clear the test database."""
     db_session.query(BSBRecord).delete()
     db_session.commit()
 
 # --- Test Cases for /banks endpoint ---
 def test_get_banks_success():
-    \"\"\"Test retrieving the list of unique banks successfully.\"\"\"
+    """Test retrieving the list of unique banks successfully."""
     db = TestingSessionLocal()
     setup_test_data(db)
     try:
@@ -71,7 +71,7 @@ def test_get_banks_success():
         db.close()
 
 def test_get_banks_empty_db():
-    \"\"\"Test retrieving banks when the database is empty.\"\"\"
+    """Test retrieving banks when the database is empty."""
     db = TestingSessionLocal()
     clear_test_data(db) # Ensure DB is empty
     try:
@@ -85,7 +85,7 @@ def test_get_banks_empty_db():
 
 # --- Test Cases for /bsb/{bsb_number} endpoint (Example - Keep existing tests if any) ---
 def test_get_bsb_details_success():
-    \"\"\"Test retrieving details for a specific BSB.\"\"\"
+    """Test retrieving details for a specific BSB."""
     db = TestingSessionLocal()
     setup_test_data(db)
     try:
@@ -100,7 +100,7 @@ def test_get_bsb_details_success():
         db.close()
 
 def test_get_bsb_details_not_found():
-    \"\"\"Test retrieving details for a non-existent BSB.\"\"\"
+    """Test retrieving details for a non-existent BSB."""
     db = TestingSessionLocal()
     clear_test_data(db)
     try:
@@ -111,7 +111,7 @@ def test_get_bsb_details_not_found():
         db.close()
 
 def test_get_bsb_details_invalid_format():
-    \"\"\"Test retrieving details with an invalid BSB format.\"\"\"
+    """Test retrieving details with an invalid BSB format."""
     response = client.get("/bsb/123456")
     assert response.status_code == 400
     assert response.json() == {"detail": "Invalid BSB format. Use XXX-XXX."}

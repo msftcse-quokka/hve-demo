@@ -182,6 +182,36 @@ async def get_bsb_details(bsb_number: str, db: Session = Depends(get_db)):
         "supportedPaymentSystem": record.Payments_Accepted # Use the mapped attribute name
     }
 
+@app.get("/bsb/bank/{bank_name}")
+async def get_bsb_by_bank(bank_name: str, db: Session = Depends(get_db)):
+    """
+    Retrieves all BSB records for a given bank name.
+    """
+    logger.info(f"Received query for bank: {bank_name}")
+    if not bank_name.strip():
+        raise HTTPException(status_code=400, detail="Bank name cannot be empty.")
+
+    records = db.query(BSBRecord).filter(BSBRecord.Bank.ilike(f"%{bank_name}%")).all()
+
+    if not records:
+        logger.warning(f"No records found for bank: {bank_name}")
+        raise HTTPException(status_code=404, detail="No records found for the specified bank.")
+
+    logger.info(f"Found {len(records)} records for bank: {bank_name}")
+    return [
+        {
+            "bsb": record.BSB,
+            "bankName": record.Bank,
+            "branchName": record.Branch,
+            "street": record.Street,
+            "suburb": record.Suburb,
+            "state": record.State,
+            "postCode": record.PostCode,
+            "supportedPaymentSystem": record.Payments_Accepted
+        }
+        for record in records
+    ]
+
 # --- Run with Uvicorn (for local testing) ---
 # You would typically run this using: uvicorn main:app --reload --app-dir bsb_checker_app
 if __name__ == "__main__":
