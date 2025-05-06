@@ -5,7 +5,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 # Import the app and the dependency override mechanism
-from .main import app, get_db, Base, BSBRecord
+from main import app, get_db, Base, BSBRecord
 
 # --- Test Database Setup ---
 # Use an in-memory SQLite database for testing

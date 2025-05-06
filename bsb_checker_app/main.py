@@ -2,11 +2,12 @@ import os
 import requests
 import pandas as pd
 import io
-from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks
-from sqlalchemy import create_engine, Column, String, MetaData, Table, inspect
+from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks, Query
+from sqlalchemy import create_engine, Column, String, MetaData, Table, inspect, func
 from sqlalchemy.orm import sessionmaker, Session, declarative_base
 from contextlib import contextmanager
 import logging
+from typing import List, Optional
 
 # --- Logging Setup ---
 logging.basicConfig(level=logging.INFO)
@@ -181,6 +182,60 @@ async def get_bsb_details(bsb_number: str, db: Session = Depends(get_db)):
         "postCode": record.PostCode,
         "supportedPaymentSystem": record.Payments_Accepted # Use the mapped attribute name
     }
+
+@app.get("/banks")
+async def get_banks(db: Session = Depends(get_db)):
+    """
+    Returns a list of all unique bank names in alphabetical order.
+    """
+    logger.info("Received request for list of all banks")
+    
+    # Query distinct banks, sorted alphabetically
+    banks = db.query(BSBRecord.Bank).distinct().order_by(BSBRecord.Bank).all()
+    
+    # Extract bank names from result tuples
+    bank_names = [bank[0] for bank in banks]
+    
+    logger.info(f"Returning {len(bank_names)} unique banks")
+    return {"banks": bank_names}
+
+@app.get("/banks/filter")
+async def filter_banks(
+    name: Optional[str] = Query(None, description="Filter banks by name (case-insensitive, partial match)"),
+    state: Optional[str] = Query(None, description="Filter banks by state (e.g., NSW, VIC)"),
+    payments_accepted: Optional[str] = Query(None, description="Filter banks by supported payment systems"),
+    db: Session = Depends(get_db)
+):
+    """
+    Filter banks by name, state and/or payments accepted.
+    Returns list of unique bank names that match the filter criteria.
+    """
+    logger.info(f"Filtering banks with parameters - name: {name}, state: {state}, payments_accepted: {payments_accepted}")
+    
+    # Start with a base query
+    query = db.query(BSBRecord.Bank).distinct()
+    
+    # Apply filters if provided
+    if name:
+        # Case-insensitive partial match for name
+        query = query.filter(func.lower(BSBRecord.Bank).contains(name.lower()))
+    
+    if state:
+        # Exact match for state
+        query = query.filter(func.upper(BSBRecord.State) == state.upper())
+    
+    if payments_accepted:
+        # Match payment systems - case-insensitive, contains
+        query = query.filter(func.lower(BSBRecord.Payments_Accepted).contains(payments_accepted.lower()))
+    
+    # Order results alphabetically
+    banks = query.order_by(BSBRecord.Bank).all()
+    
+    # Extract bank names from result tuples
+    bank_names = [bank[0] for bank in banks]
+    
+    logger.info(f"Found {len(bank_names)} banks matching filter criteria")
+    return {"banks": bank_names}
 
 # --- Run with Uvicorn (for local testing) ---
 # You would typically run this using: uvicorn main:app --reload --app-dir bsb_checker_app
