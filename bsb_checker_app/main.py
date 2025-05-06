@@ -3,12 +3,10 @@ import requests
 import pandas as pd
 import io
 from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks
-from sqlalchemy import create_engine, Column, String, MetaData, Table, inspect, distinct
+from sqlalchemy import create_engine, Column, String, MetaData, Table, inspect
 from sqlalchemy.orm import sessionmaker, Session, declarative_base
 from contextlib import contextmanager
 import logging
-from pydantic import BaseModel
-from typing import List
 
 # --- Logging Setup ---
 logging.basicConfig(level=logging.INFO)
@@ -18,7 +16,7 @@ logger = logging.getLogger(__name__)
 DATABASE_URL = "sqlite:///./bsb_data.db"
 BSB_CSV_URL = "https://bsb.auspaynet.com.au/Public/BSB_DB.NSF/getBSBFullCSV?OpenAgent"
 TABLE_NAME = "bsb_records"
-DB_FILE_PATH = "./bsb_data.db"
+DB_FILE_PATH = "./bsb_data.db" # Relative to where the app runs (inside bsb_checker_app)
 
 # --- Database Setup ---
 # The database file will be created in the same directory as main.py
@@ -61,12 +59,6 @@ class BSBRecord(Base):
     # but direct mapping during insertion is simpler with matching names.
     # Use the name defined in the Table object above.
     Payments_Accepted = Column("Payments Accepted", String)
-
-
-# --- Pydantic Models ---
-# Define response model for the new endpoint
-class BankListResponse(BaseModel):
-    banks: List[str]
 
 
 # --- Dependency for DB Session ---
@@ -160,26 +152,6 @@ async def trigger_update_bsb(background_tasks: BackgroundTasks):
     logger.info("Received request to update BSB database.")
     background_tasks.add_task(update_bsb_database)
     return {"message": "BSB database update initiated in the background."}
-
-@app.get("/banks", response_model=BankListResponse)
-async def get_banks(db: Session = Depends(get_db)):
-    """
-    Retrieves a sorted list of unique bank names from the database.
-    """
-    logger.info("Received request to list all banks.")
-    try:
-        # Query distinct bank names and sort them alphabetically
-        # The result is a list of tuples, e.g., [('Bank A',), ('Bank B',)]
-        bank_tuples = db.query(distinct(BSBRecord.Bank)).order_by(BSBRecord.Bank).all()
-        # Extract the first element from each tuple
-        bank_names = [bank[0] for bank in bank_tuples if bank[0]] # Ensure bank name is not None or empty
-
-        logger.info(f"Found {len(bank_names)} unique bank names.")
-        return {"banks": bank_names}
-    except Exception as e:
-        logger.error(f"Error retrieving bank list: {e}", exc_info=True)
-        # Re-raise as an HTTPException for FastAPI to handle
-        raise HTTPException(status_code=500, detail="Internal server error retrieving bank list.")
 
 @app.get("/bsb/{bsb_number}")
 async def get_bsb_details(bsb_number: str, db: Session = Depends(get_db)):
