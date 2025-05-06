@@ -3,10 +3,12 @@ import requests
 import pandas as pd
 import io
 from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks
-from sqlalchemy import create_engine, Column, String, MetaData, Table, inspect
+from sqlalchemy import create_engine, Column, String, MetaData, Table, inspect, distinct # Import distinct
 from sqlalchemy.orm import sessionmaker, Session, declarative_base
 from contextlib import contextmanager
 import logging
+from typing import List # Import List for response model
+from pydantic import BaseModel # Import BaseModel for response model
 
 # --- Logging Setup ---
 logging.basicConfig(level=logging.INFO)
@@ -59,6 +61,24 @@ class BSBRecord(Base):
     # but direct mapping during insertion is simpler with matching names.
     # Use the name defined in the Table object above.
     Payments_Accepted = Column("Payments Accepted", String)
+
+
+# --- Pydantic Models (for request/response validation) ---
+class BSBDetail(BaseModel):
+    bsb: str
+    bank: str
+    branch: str
+    street: str
+    suburb: str
+    state: str
+    postcode: str
+    payments_accepted: str
+
+    class Config:
+        orm_mode = True # Changed from from_attributes=True for compatibility
+
+class BankListResponse(BaseModel):
+    banks: List[str]
 
 
 # --- Dependency for DB Session ---
@@ -153,7 +173,7 @@ async def trigger_update_bsb(background_tasks: BackgroundTasks):
     background_tasks.add_task(update_bsb_database)
     return {"message": "BSB database update initiated in the background."}
 
-@app.get("/bsb/{bsb_number}")
+@app.get("/bsb/{bsb_number}", response_model=BSBDetail)
 async def get_bsb_details(bsb_number: str, db: Session = Depends(get_db)):
     """
     Retrieves details for a given BSB number (format: XXX-XXX).
@@ -181,6 +201,26 @@ async def get_bsb_details(bsb_number: str, db: Session = Depends(get_db)):
         "postCode": record.PostCode,
         "supportedPaymentSystem": record.Payments_Accepted # Use the mapped attribute name
     }
+
+# New endpoint to list all unique bank names
+@app.get("/banks", response_model=BankListResponse)
+def list_all_banks(db: Session = Depends(get_db)):
+    """
+    Retrieves a sorted list of all unique bank names from the database.
+    """
+    try:
+        logger.info("Request received for /banks endpoint.")
+        # Query distinct bank names and sort them alphabetically
+        banks_query = db.query(distinct(BSBRecord.Bank)).order_by(BSBRecord.Bank).all()
+        # The result is a list of tuples, e.g., [('Bank A',), ('Bank B',)]. Extract the first element.
+        bank_names = [bank[0] for bank in banks_query if bank[0]] # Ensure bank name is not None or empty
+
+        logger.info(f"Successfully retrieved {len(bank_names)} unique bank names.")
+        return {"banks": bank_names}
+    except Exception as e:
+        logger.error(f"Error retrieving bank list: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error while retrieving bank list.")
+
 
 # --- Run with Uvicorn (for local testing) ---
 # You would typically run this using: uvicorn main:app --reload --app-dir bsb_checker_app
