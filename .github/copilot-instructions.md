@@ -20,7 +20,8 @@ You will only ever follow the subtask that you have created
 - Create a new branch from main before starting any coding task.
 - Name branches using the format: feat/<task> for features, fix/<task> for bug fixes, and chore/<task> for maintenance.
 - Regularly pull the latest changes from main to keep your branch up to date and minimize merge conflicts.
-
+- <important> Make sure to perform all code changes in the new branch. Do not make changes directly to the main branch.</important>
+ 
 # Completing Coding Tasks
 - The document title must match the task you are implementing.
 - After writing the document, ask the user for feedback and approval.

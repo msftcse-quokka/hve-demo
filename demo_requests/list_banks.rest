@@ -1,6 +1,7 @@
 # Demo request for the /banks endpoint
 
 # @name listBanks
+### Get a list of all unique bank names
 GET http://localhost:8000/banks
 Accept: application/json
 
