@@ -1,0 +1,34 @@
+name: PR Intent Checker
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read       
+  pull-requests: write  
+  issues: read          
+
+jobs:
+  intent-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 
+
+      - name: Run PR Intent Checker
+        uses: kevinjcwu/pr-intent-checker@refactor-repo
+        id: intent_checker
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          azure_openai_endpoint: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
+          azure_openai_key: ${{ secrets.AZURE_OPENAI_KEY }}
+          azure_openai_deployment: ${{ secrets.AZURE_OPENAI_DEPLOYMENT }}
+
+      - name: Check result from intent checker
+        if: steps.intent_checker.outputs.result == 'FAIL'
+        run: |
+          echo "Intent Check Failed based on LLM evaluation."
+          exit 1
