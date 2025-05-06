@@ -116,7 +116,24 @@ def update_bsb_database():
 app = FastAPI(
     title="BSB Checker API",
     description="API to query Australian BSB numbers and update the BSB database.",
-    version="1.0.0"
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json",
+    openapi_tags=[
+        {
+            "name": "BSB Operations",
+            "description": "Operations related to BSB numbers"
+        },
+        {
+            "name": "Bank Operations",
+            "description": "Operations related to banks"
+        },
+        {
+            "name": "System Operations",
+            "description": "System maintenance operations"
+        }
+    ]
 )
 
 # --- Startup Event ---
@@ -154,7 +171,7 @@ async def trigger_update_bsb(background_tasks: BackgroundTasks):
     background_tasks.add_task(update_bsb_database)
     return {"message": "BSB database update initiated in the background."}
 
-@app.get("/bsb/{bsb_number}")
+@app.get("/bsb/{bsb_number}", tags=["BSB Operations"])
 async def get_bsb_details(bsb_number: str, db: Session = Depends(get_db)):
     """
     Retrieves details for a given BSB number (format: XXX-XXX).
@@ -183,7 +200,7 @@ async def get_bsb_details(bsb_number: str, db: Session = Depends(get_db)):
         "supportedPaymentSystem": record.Payments_Accepted # Use the mapped attribute name
     }
 
-@app.get("/banks")
+@app.get("/banks", tags=["Bank Operations"])
 async def get_banks(db: Session = Depends(get_db)):
     """
     Returns a list of all unique bank names in alphabetical order.
@@ -199,7 +216,7 @@ async def get_banks(db: Session = Depends(get_db)):
     logger.info(f"Returning {len(bank_names)} unique banks")
     return {"banks": bank_names}
 
-@app.get("/banks/filter")
+@app.get("/banks/filter", tags=["Bank Operations"])
 async def filter_banks(
     name: Optional[str] = Query(None, description="Filter banks by name (case-insensitive, partial match)"),
     state: Optional[str] = Query(None, description="Filter banks by state (e.g., NSW, VIC)"),
