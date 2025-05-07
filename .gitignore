@@ -5,4 +5,4 @@ __pycache__/
 # Ignore the SQLite database file
 bsb_data.db
 
-venv
+venv/
