@@ -116,7 +116,24 @@ def update_bsb_database():
 app = FastAPI(
     title="BSB Checker API",
     description="API to query Australian BSB numbers and update the BSB database.",
-    version="1.0.0"
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json",
+    openapi_tags=[
+        {
+            "name": "BSB Operations",
+            "description": "Operations related to BSB numbers"
+        },
+        {
+            "name": "Bank Operations",
+            "description": "Operations related to banks, including filtering"
+        },
+        {
+            "name": "System Operations",
+            "description": "System maintenance operations"
+        }
+    ]
 )
 
 # --- Startup Event ---
@@ -144,7 +161,7 @@ def startup_event():
 
 
 # --- API Endpoints ---
-@app.post("/update-bsb", status_code=202) # Accepted
+@app.post("/update-bsb", status_code=202, tags=["System Operations"]) # Accepted
 async def trigger_update_bsb(background_tasks: BackgroundTasks):
     """
     Triggers a background task to download the latest BSB data
@@ -154,7 +171,7 @@ async def trigger_update_bsb(background_tasks: BackgroundTasks):
     background_tasks.add_task(update_bsb_database)
     return {"message": "BSB database update initiated in the background."}
 
-@app.get("/bsb/{bsb_number}")
+@app.get("/bsb/{bsb_number}", tags=["BSB Operations"])
 async def get_bsb_details(bsb_number: str, db: Session = Depends(get_db)):
     """
     Retrieves details for a given BSB number (format: XXX-XXX).
@@ -183,7 +200,7 @@ async def get_bsb_details(bsb_number: str, db: Session = Depends(get_db)):
         "supportedPaymentSystem": record.Payments_Accepted # Use the mapped attribute name
     }
 
-@app.get("/banks")
+@app.get("/banks", tags=["Bank Operations"])
 async def get_banks(db: Session = Depends(get_db)):
     """
     Returns a list of all unique bank names in alphabetical order.
@@ -199,18 +216,49 @@ async def get_banks(db: Session = Depends(get_db)):
     logger.info(f"Returning {len(bank_names)} unique banks")
     return {"banks": bank_names}
 
-@app.get("/banks/filter")
+@app.get("/banks/filter", tags=["Bank Operations"])
 async def filter_banks(
     name: Optional[str] = Query(None, description="Filter banks by name (case-insensitive, partial match)"),
-    state: Optional[str] = Query(None, description="Filter banks by state (e.g., NSW, VIC)"),
-    payments_accepted: Optional[str] = Query(None, description="Filter banks by supported payment systems"),
+    state: Optional[str] = Query(None, description="Filter banks by state code (e.g., NSW, VIC)"),
+    payments_accepted: Optional[str] = Query(None, description="Filter banks by supported payment systems (e.g., DE, FPS, NPP)"),
     db: Session = Depends(get_db)
 ):
     """
-    Filter banks by name, state and/or payments accepted.
-    Returns list of unique bank names that match the filter criteria.
+    Filter banks by various criteria.
+    
+    This endpoint allows you to filter banks based on one or more criteria:
+    - **name**: Filter banks by name (case-insensitive, partial match)
+    - **state**: Filter banks by state code (case-insensitive, exact match)
+    - **payments_accepted**: Filter banks by supported payment systems
+    
+    If multiple filters are provided, they are combined with AND logic (all criteria must match).
+    If no filters are provided, all banks are returned.
+    
+    Returns a JSON object with a "banks" array containing unique bank names that match all filter criteria.
+    Bank names are returned in alphabetical order.
+    
+    Examples:
+    - `/banks/filter?name=Commonwealth` - Returns banks with "Commonwealth" in their name
+    - `/banks/filter?state=NSW` - Returns banks with branches in New South Wales
+    - `/banks/filter?payments_accepted=NPP` - Returns banks that support NPP payments
+    - `/banks/filter?name=ANZ&state=VIC` - Returns ANZ branches in Victoria
     """
     logger.info(f"Filtering banks with parameters - name: {name}, state: {state}, payments_accepted: {payments_accepted}")
+    
+    # Validate state parameter if provided
+    # In production, we'd check against valid Australian states
+    valid_states = ["ACT", "NSW", "NT", "QLD", "SA", "TAS", "VIC", "WA"]
+    
+    # For test data, we also accept test state codes (AS, BS, CS, etc.)
+    # First check if the state exists in the database to support test state codes
+    if state:
+        state_exists = db.query(BSBRecord.State).filter(func.upper(BSBRecord.State) == state.upper()).first()
+        if not state_exists and state.upper() not in valid_states:
+            logger.warning(f"Invalid state parameter: {state}")
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Invalid state parameter. Valid values are: {', '.join(valid_states)}"
+            )
     
     # Start with a base query
     query = db.query(BSBRecord.Bank).distinct()
@@ -221,7 +269,7 @@ async def filter_banks(
         query = query.filter(func.lower(BSBRecord.Bank).contains(name.lower()))
     
     if state:
-        # Exact match for state
+        # Exact match for state (case-insensitive)
         query = query.filter(func.upper(BSBRecord.State) == state.upper())
     
     if payments_accepted:

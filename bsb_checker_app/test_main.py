@@ -186,6 +186,21 @@ def test_filter_banks_no_parameters():
         clear_test_data(db)
         db.close()
 
+def test_filter_banks_invalid_state():
+    """Test filtering banks with an invalid state parameter."""
+    db = TestingSessionLocal()
+    setup_test_data(db)
+    try:
+        response = client.get("/banks/filter?state=ZZ")  # Invalid state code
+        assert response.status_code == 400
+        data = response.json()
+        assert "detail" in data
+        assert "Invalid state parameter" in data["detail"]
+        assert "ACT, NSW, NT, QLD, SA, TAS, VIC, WA" in data["detail"]
+    finally:
+        clear_test_data(db)
+        db.close()
+
 # --- Test Cases for /bsb/{bsb_number} endpoint (Example - Keep existing tests if any) ---
 def test_get_bsb_details_success():
     """Test retrieving details for a valid BSB number."""
