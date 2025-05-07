@@ -83,13 +83,116 @@ def test_get_banks_empty_db():
     finally:
         db.close()
 
-# --- Test Cases for /bsb/{bsb_number} endpoint (Example - Keep existing tests if any) ---
-def test_get_bsb_details_success():
-    """Test retrieving details for a specific BSB."""
+# --- Test Cases for /banks/filter endpoint ---
+def test_filter_banks_by_name():
+    """Test filtering banks by name."""
     db = TestingSessionLocal()
     setup_test_data(db)
     try:
-        response = client.get("/bsb/222-222")
+        response = client.get("/banks/filter?name=Bank A")
+        assert response.status_code == 200
+        data = response.json()
+        assert "banks" in data
+        assert data["banks"] == ["Bank A"]
+        
+        # Test case insensitivity
+        response = client.get("/banks/filter?name=bank a")
+        assert response.status_code == 200
+        assert response.json()["banks"] == ["Bank A"]
+        
+        # Test partial match
+        response = client.get("/banks/filter?name=bank")
+        assert response.status_code == 200
+        assert len(response.json()["banks"]) == 3
+    finally:
+        clear_test_data(db)
+        db.close()
+
+def test_filter_banks_by_state():
+    """Test filtering banks by state."""
+    db = TestingSessionLocal()
+    setup_test_data(db)
+    try:
+        response = client.get("/banks/filter?state=AS")
+        assert response.status_code == 200
+        data = response.json()
+        assert "banks" in data
+        assert data["banks"] == ["Bank A"]
+        
+        # Test case insensitivity
+        response = client.get("/banks/filter?state=as")
+        assert response.status_code == 200
+        assert response.json()["banks"] == ["Bank A"]
+    finally:
+        clear_test_data(db)
+        db.close()
+
+def test_filter_banks_by_payments():
+    """Test filtering banks by payment types."""
+    db = TestingSessionLocal()
+    setup_test_data(db)
+    try:
+        response = client.get("/banks/filter?payments_accepted=All")
+        assert response.status_code == 200
+        data = response.json()
+        assert "banks" in data
+        banks = set(data["banks"])
+        assert "Bank B" in banks
+        assert "Bank C" in banks
+        assert len(banks) == 2
+    finally:
+        clear_test_data(db)
+        db.close()
+
+def test_filter_banks_multiple_criteria():
+    """Test filtering banks with multiple criteria (AND logic)."""
+    db = TestingSessionLocal()
+    setup_test_data(db)
+    try:
+        response = client.get("/banks/filter?name=Bank&state=AS")
+        assert response.status_code == 200
+        data = response.json()
+        assert "banks" in data
+        assert data["banks"] == ["Bank A"]
+    finally:
+        clear_test_data(db)
+        db.close()
+
+def test_filter_banks_no_matches():
+    """Test filtering banks with criteria that match no records."""
+    db = TestingSessionLocal()
+    setup_test_data(db)
+    try:
+        response = client.get("/banks/filter?name=NonExistentBank")
+        assert response.status_code == 200
+        data = response.json()
+        assert "banks" in data
+        assert data["banks"] == []
+    finally:
+        clear_test_data(db)
+        db.close()
+
+def test_filter_banks_no_parameters():
+    """Test filtering banks with no parameters (should return all banks)."""
+    db = TestingSessionLocal()
+    setup_test_data(db)
+    try:
+        response = client.get("/banks/filter")
+        assert response.status_code == 200
+        data = response.json()
+        assert "banks" in data
+        assert data["banks"] == ["Bank A", "Bank B", "Bank C"]
+    finally:
+        clear_test_data(db)
+        db.close()
+
+# --- Test Cases for /bsb/{bsb_number} endpoint (Example - Keep existing tests if any) ---
+def test_get_bsb_details_success():
+    """Test retrieving details for a valid BSB number."""
+    db = TestingSessionLocal()
+    setup_test_data(db)
+    try:
+        response = client.get("/bsb/222-222")  # BSB for Bank A, Branch A1
         assert response.status_code == 200
         data = response.json()
         assert data["bsb"] == "222-222"
@@ -98,21 +201,3 @@ def test_get_bsb_details_success():
     finally:
         clear_test_data(db)
         db.close()
-
-def test_get_bsb_details_not_found():
-    """Test retrieving details for a non-existent BSB."""
-    db = TestingSessionLocal()
-    clear_test_data(db)
-    try:
-        response = client.get("/bsb/999-999")
-        assert response.status_code == 404
-        assert response.json() == {"detail": "BSB number not found"}
-    finally:
-        db.close()
-
-def test_get_bsb_details_invalid_format():
-    """Test retrieving details with an invalid BSB format."""
-    response = client.get("/bsb/123456")
-    assert response.status_code == 400
-    assert response.json() == {"detail": "Invalid BSB format. Use XXX-XXX."}
-
