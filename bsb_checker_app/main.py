@@ -185,18 +185,23 @@ async def get_bsb_details(bsb_number: str, db: Session = Depends(get_db)):
 @app.get("/banks")
 async def get_banks(db: Session = Depends(get_db)):
     """
-    Retrieves a list of all unique bank names sorted alphabetically.
+    Retrieves a list of all unique bank names sorted alphabetically in descending order.
     This endpoint is useful for populating dropdowns in UI for filtering.
     """
     logger.info("Received request for list of all banks")
     
-    # Query for distinct bank names and sort them alphabetically
-    banks = db.query(BSBRecord.Bank).distinct().order_by(BSBRecord.Bank).all()
+    # Query for distinct bank names and sort them alphabetically in descending order
+    banks = db.query(BSBRecord.Bank).distinct().order_by(BSBRecord.Bank.desc()).all()
     
     # Extract the bank names from the query result
     bank_names = [bank[0] for bank in banks]
     
     logger.info(f"Found {len(bank_names)} unique banks")
+    
+    # Error handling for when no banks are found
+    if not bank_names:
+        logger.warning("No banks found in the database")
+        raise HTTPException(status_code=404, detail="No banks found in the database")
     
     # Return data in a structured JSON format
     return {"banks": bank_names}

@@ -64,8 +64,8 @@ def test_get_banks_success():
         assert response.status_code == 200
         data = response.json()
         assert "banks" in data
-        # Should return unique banks sorted alphabetically
-        assert data["banks"] == ["Bank A", "Bank B", "Bank C"]
+        # Should return unique banks sorted alphabetically in descending order
+        assert data["banks"] == ["Bank C", "Bank B", "Bank A"]
     finally:
         clear_test_data(db)
         db.close()
@@ -76,10 +76,9 @@ def test_get_banks_empty_db():
     clear_test_data(db) # Ensure DB is empty
     try:
         response = client.get("/banks")
-        assert response.status_code == 200
+        assert response.status_code == 404
         data = response.json()
-        assert "banks" in data
-        assert data["banks"] == [] # Expect an empty list
+        assert data["detail"] == "No banks found in the database"
     finally:
         db.close()
 
