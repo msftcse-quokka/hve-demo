@@ -182,6 +182,25 @@ async def get_bsb_details(bsb_number: str, db: Session = Depends(get_db)):
         "supportedPaymentSystem": record.Payments_Accepted # Use the mapped attribute name
     }
 
+@app.get("/banks")
+async def get_banks(db: Session = Depends(get_db)):
+    """
+    Retrieves a list of all unique bank names sorted alphabetically.
+    This endpoint is useful for populating dropdowns in UI for filtering.
+    """
+    logger.info("Received request for list of all banks")
+    
+    # Query for distinct bank names and sort them alphabetically
+    banks = db.query(BSBRecord.Bank).distinct().order_by(BSBRecord.Bank).all()
+    
+    # Extract the bank names from the query result
+    bank_names = [bank[0] for bank in banks]
+    
+    logger.info(f"Found {len(bank_names)} unique banks")
+    
+    # Return data in a structured JSON format
+    return {"banks": bank_names}
+
 # --- Run with Uvicorn (for local testing) ---
 # You would typically run this using: uvicorn main:app --reload --app-dir bsb_checker_app
 if __name__ == "__main__":
