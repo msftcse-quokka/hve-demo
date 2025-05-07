@@ -3,6 +3,8 @@ import requests
 import pandas as pd
 import io
 from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks
+from pydantic import BaseModel
+from typing import List
 from sqlalchemy import create_engine, Column, String, MetaData, Table, inspect
 from sqlalchemy.orm import sessionmaker, Session, declarative_base
 from contextlib import contextmanager
@@ -143,6 +145,20 @@ def startup_event():
 
 
 # --- API Endpoints ---
+# --- Response Models ---
+class BSBResponse(BaseModel):
+    bsb: str
+    bankName: str
+    branchName: str
+    street: str
+    suburb: str
+    state: str
+    postCode: str
+    supportedPaymentSystem: str
+
+class BanksResponse(BaseModel):
+    banks: List[str]
+
 @app.post("/update-bsb", status_code=202) # Accepted
 async def trigger_update_bsb(background_tasks: BackgroundTasks):
     """
@@ -153,10 +169,16 @@ async def trigger_update_bsb(background_tasks: BackgroundTasks):
     background_tasks.add_task(update_bsb_database)
     return {"message": "BSB database update initiated in the background."}
 
-@app.get("/bsb/{bsb_number}")
+@app.get("/bsb/{bsb_number}", response_model=BSBResponse)
 async def get_bsb_details(bsb_number: str, db: Session = Depends(get_db)):
     """
     Retrieves details for a given BSB number (format: XXX-XXX).
+    
+    Returns:
+        BSBResponse: The bank details associated with the BSB number
+        
+    Raises:
+        HTTPException: 400 if BSB format is invalid, 404 if BSB is not found
     """
     logger.info(f"Received query for BSB: {bsb_number}")
     # Basic validation for BSB format (optional but recommended)
@@ -182,11 +204,17 @@ async def get_bsb_details(bsb_number: str, db: Session = Depends(get_db)):
         "supportedPaymentSystem": record.Payments_Accepted # Use the mapped attribute name
     }
 
-@app.get("/banks")
+@app.get("/banks", response_model=BanksResponse)
 async def get_banks(db: Session = Depends(get_db)):
     """
     Retrieves a list of all unique bank names sorted alphabetically in descending order.
     This endpoint is useful for populating dropdowns in UI for filtering.
+    
+    Returns:
+        BanksResponse: A list of unique bank names sorted alphabetically in descending order
+        
+    Raises:
+        HTTPException: 404 if no banks are found in the database
     """
     logger.info("Received request for list of all banks")
     
