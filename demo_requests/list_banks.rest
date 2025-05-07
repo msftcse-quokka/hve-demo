@@ -1,7 +1,0 @@
-# Demo request for the /banks endpoint
-
-# @name listBanks
-GET http://localhost:8000/banks
-Accept: application/json
-
-###
