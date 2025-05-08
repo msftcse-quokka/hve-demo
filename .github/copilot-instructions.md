@@ -28,6 +28,23 @@ You will only ever follow the subtask that you have created
 - Checkout the branch before starting your coding task
 - Regularly pull the latest changes from main to keep your branch up to date and minimize merge conflicts.
 
+# Observability:
+- Use logging to track the flow of the application and capture important events.
+- Use structured logging to make it easier to search and analyze logs.
+- Write logs at appropriate levels (e.g., debug, info, warning, error) to provide context and severity.
+
+# Security:
+- Never hardcode sensitive information such as API keys or passwords in the code.
+- All sensitive environment variables should be stored in a .env file and loaded using a library like python-dotenv
+- When updating a .env file, make sure to update the related .env.sample file to reflect the changes.
+- Validate and sanitize all user inputs to prevent injection attacks and other vulnerabilities.
+
+# Unit Testing:
+- Use pytest for all unit tests.
+- Write unit tests for all new features and bug fixes.
+- Write tests that provide a reasonable level of coverage for the code
+- Use mocking and stubbing to isolate the code being tested and avoid dependencies on external systems.
+
 # Completing Coding Tasks
 - You must make sure that all the acceptance criteria tasks are checked off before considering a task to be complete.
 - You will always ask the user for feedback once complete.
