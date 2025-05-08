@@ -20,7 +20,7 @@ You will only ever follow the subtask that you have created
 - Follow established design principles and patterns where appropriate.
 - Design code to be testable and modular. Use dependency injection and avoid tight coupling.
 - Ensure code is easy to debug and extend. Use logging and interfaces as needed.
-- You will only ever work on one acceptance criteria at a time, and you will continually update the user story each time you finish an acceptance criteria.
+- Each time you complete an acceptance criteria, update the issue description to check off the acceptance criteria item, before progressing with the next one.
 
 # Branching:
 - Create a new branch from main before starting any coding task.
