@@ -166,8 +166,8 @@ async def list_banks(db: Session = Depends(get_db)):
     try:
         # Query for distinct bank names
         bank_names = db.query(BSBRecord.Bank).distinct().all()
-        # Flatten and remove None values
-        bank_list = sorted([b[0] for b in bank_names if b[0]])
+        # Flatten and remove None values and sort in descending order
+        bank_list = sorted([b[0] for b in bank_names if b[0]], reverse=True)
         if not bank_list:
             logger.warning("No banks found in the database.")
             raise HTTPException(status_code=404, detail="No banks found in the database.")
