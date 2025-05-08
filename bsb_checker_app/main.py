@@ -153,6 +153,30 @@ async def trigger_update_bsb(background_tasks: BackgroundTasks):
     background_tasks.add_task(update_bsb_database)
     return {"message": "BSB database update initiated in the background."}
 
+
+# --- New Endpoint: List All Banks ---
+from sqlalchemy import select, distinct
+
+@app.get("/banks", summary="List all unique bank names", tags=["Banks"])
+async def list_banks(db: Session = Depends(get_db)):
+    """
+    Returns a list of all unique bank names in the BSB database, sorted alphabetically.
+    """
+    logger.info("Received request to list all unique bank names.")
+    try:
+        # Query for distinct bank names
+        bank_names = db.query(BSBRecord.Bank).distinct().all()
+        # Flatten and remove None values
+        bank_list = sorted([b[0] for b in bank_names if b[0]])
+        if not bank_list:
+            logger.warning("No banks found in the database.")
+            raise HTTPException(status_code=404, detail="No banks found in the database.")
+        logger.info(f"Returning {len(bank_list)} unique bank names.")
+        return {"banks": bank_list}
+    except Exception as e:
+        logger.error(f"Error retrieving bank names: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error retrieving bank names.")
+
 @app.get("/bsb/{bsb_number}")
 async def get_bsb_details(bsb_number: str, db: Session = Depends(get_db)):
     """
