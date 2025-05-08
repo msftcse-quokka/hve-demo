@@ -70,17 +70,17 @@ def test_get_banks_success():
         clear_test_data(db)
         db.close()
 
-def test_get_banks_success_descending_order():
-    """Test retrieving the list of unique banks successfully, sorted in descending order."""
+def test_get_banks_success_ascending_order():
+    """Test retrieving the list of unique banks successfully, sorted in ascending order (default behavior)."""
     db = TestingSessionLocal()
     setup_test_data(db)
     try:
-        response = client.get("/banks")
+        response = client.get("/banks") # Removed query parameter
         assert response.status_code == 200
         data = response.json()
         assert "banks" in data
-        # Should return unique banks sorted alphabetically in descending order
-        assert data["banks"] == ["Bank C", "Bank B", "Bank A"]
+        # Should return unique banks sorted alphabetically in ascending order
+        assert data["banks"] == ["Bank A", "Bank B", "Bank C"]
     finally:
         clear_test_data(db)
         db.close()

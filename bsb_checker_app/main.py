@@ -7,6 +7,7 @@ from sqlalchemy import create_engine, Column, String, MetaData, Table, inspect
 from sqlalchemy.orm import sessionmaker, Session, declarative_base
 from contextlib import contextmanager
 import logging
+from typing import List, Optional # Import Optional
 
 # --- Logging Setup ---
 logging.basicConfig(level=logging.INFO)
@@ -62,9 +63,6 @@ class BSBRecord(Base):
 
 
 # --- Response Model for /banks endpoint ---
-from typing import List
-from pydantic import BaseModel
-
 class BankListResponse(BaseModel):
     banks: List[str]
 
@@ -193,15 +191,13 @@ async def get_bsb_details(bsb_number: str, db: Session = Depends(get_db)):
 async def get_all_banks(db: Session = Depends(get_db)):
     """
     Retrieves a list of all unique bank names from the database,
-    sorted alphabetically in descending order.
+    sorted alphabetically in ascending order.
     """
     logger.info("Received request to list all unique bank names.")
+
     try:
-        # Query for distinct bank names and sort them
-        # The distinct() method on its own might not be enough for all DBs with SQLAlchemy ORM
-        # A common way is to query the column and then use Python's set and sorted
-        # However, for direct DB query:
-        query_result = db.query(BSBRecord.Bank).distinct().order_by(BSBRecord.Bank.desc()).all()
+        query = db.query(BSBRecord.Bank).distinct().order_by(BSBRecord.Bank.asc())
+        query_result = query.all()
 
         # query_result will be a list of tuples, e.g., [('Bank A',), ('Bank B',)]
         # Extract the bank names into a flat list
