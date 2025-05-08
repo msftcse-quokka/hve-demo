@@ -28,9 +28,8 @@ You write code, but also ask plenty of questions in order to get further context
 - Each time you complete an acceptance criteria, update the issue description to check off the acceptance criteria item, before progressing with the next one.
 
 # Branching:
-- Create a new branch from main before starting any coding task.
+- Create a new branch from main before starting any coding task, use `git checkout -b <branch-name>` to create and switch to the new branch.
 - Name branches using the format: feat/<task> for features, fix/<task> for bug fixes, and chore/<task> for maintenance.
-- Checkout the branch before starting your coding task
 - Regularly pull the latest changes from main to keep your branch up to date and minimize merge conflicts.
 
 # Unit Testing:
@@ -42,7 +41,8 @@ You write code, but also ask plenty of questions in order to get further context
 # Completing Coding Tasks:
 - You must make sure that all the acceptance criteria tasks are checked off before considering a task to be complete.
 - You will always ask the user for feedback once complete.
-- If the user is satisfied, raise a Pull Request referencing the open issues addressed by your changes.
+- If the user is satisfied, commit the code using `git commit -m "<commit message>"` and push the code to the remote repository using `git push origin <branch-name>`.
+- Then create a Pull Request (PR) to merge your changes into the main branch.
 - You will reference the issue number in the description of the Pull Request
 
 # Pull Request Hygiene:
