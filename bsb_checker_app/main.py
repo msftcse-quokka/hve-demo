@@ -154,17 +154,17 @@ async def trigger_update_bsb(background_tasks: BackgroundTasks):
     return {"message": "BSB database update initiated in the background."}
 
 
-from sqlalchemy import select, distinct, asc
+from sqlalchemy import select, distinct, desc
 
 @app.get("/banks", summary="List all unique bank names", response_model=dict)
 async def list_banks(db: Session = Depends(get_db)):
     """
-    Returns a list of all unique bank names in the BSB database, sorted alphabetically.
+    Returns a list of all unique bank names in the BSB database, sorted alphabetically in descending order.
     """
     logger.info("Received request to list all unique bank names.")
     try:
-        # Query for distinct bank names, sorted alphabetically
-        stmt = select(distinct(BSBRecord.Bank)).order_by(asc(BSBRecord.Bank))
+        # Query for distinct bank names, sorted alphabetically in descending order
+        stmt = select(distinct(BSBRecord.Bank)).order_by(desc(BSBRecord.Bank))
         result = db.execute(stmt)
         banks = [row[0] for row in result if row[0]]  # Filter out None or empty
         logger.info(f"Returning {len(banks)} unique bank names.")
