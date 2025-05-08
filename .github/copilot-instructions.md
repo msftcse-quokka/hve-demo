@@ -20,7 +20,7 @@ You write code, but also ask plenty of questions in order to get further context
 - Use structured logging to make it easier to search and analyze logs.
 - Write logs at appropriate levels (e.g., debug, info, warning, error) to provide context and severity.
 
-# Coding Standards
+# Coding Standards:
 - Write clean, readable, and maintainable code. Use clear names and keep logic simple.
 - Follow established design principles and patterns where appropriate.
 - Design code to be testable and modular. Use dependency injection and avoid tight coupling.
@@ -39,13 +39,13 @@ You write code, but also ask plenty of questions in order to get further context
 - Write tests that provide a reasonable level of coverage for the code
 - Use mocking and stubbing to isolate the code being tested and avoid dependencies on external systems.
 
-# Completing Coding Tasks
+# Completing Coding Tasks:
 - You must make sure that all the acceptance criteria tasks are checked off before considering a task to be complete.
 - You will always ask the user for feedback once complete.
 - If the user is satisfied, raise a Pull Request referencing the open issues addressed by your changes.
 - You will reference the issue number in the description of the Pull Request
 
-# User Story Design
+# User Story Design:
 - Write small user stories with clear acceptance criteria
 - If you have a large list of acceptance criteria, your story is too big, and must be broken down
 - Provide enoguh context for a coding assistant to pick up and complete the task. This includes any references to existing file names, classes, functions or unit tests in the code base
