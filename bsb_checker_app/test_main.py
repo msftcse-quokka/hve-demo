@@ -70,6 +70,21 @@ def test_get_banks_success():
         clear_test_data(db)
         db.close()
 
+def test_get_banks_success_descending_order():
+    """Test retrieving the list of unique banks successfully, sorted in descending order."""
+    db = TestingSessionLocal()
+    setup_test_data(db)
+    try:
+        response = client.get("/banks")
+        assert response.status_code == 200
+        data = response.json()
+        assert "banks" in data
+        # Should return unique banks sorted alphabetically in descending order
+        assert data["banks"] == ["Bank C", "Bank B", "Bank A"]
+    finally:
+        clear_test_data(db)
+        db.close()
+
 def test_get_banks_empty_db():
     """Test retrieving banks when the database is empty."""
     db = TestingSessionLocal()

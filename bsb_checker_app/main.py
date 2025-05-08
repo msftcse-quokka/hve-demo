@@ -61,6 +61,13 @@ class BSBRecord(Base):
     Payments_Accepted = Column("Payments Accepted", String)
 
 
+# --- Response Model for /banks endpoint ---
+from typing import List
+from pydantic import BaseModel
+
+class BankListResponse(BaseModel):
+    banks: List[str]
+
 # --- Dependency for DB Session ---
 def get_db():
     db = SessionLocal()
@@ -181,6 +188,38 @@ async def get_bsb_details(bsb_number: str, db: Session = Depends(get_db)):
         "postCode": record.PostCode,
         "supportedPaymentSystem": record.Payments_Accepted # Use the mapped attribute name
     }
+
+@app.get("/banks", response_model=BankListResponse)
+async def get_all_banks(db: Session = Depends(get_db)):
+    """
+    Retrieves a list of all unique bank names from the database,
+    sorted alphabetically in descending order.
+    """
+    logger.info("Received request to list all unique bank names.")
+    try:
+        # Query for distinct bank names and sort them
+        # The distinct() method on its own might not be enough for all DBs with SQLAlchemy ORM
+        # A common way is to query the column and then use Python's set and sorted
+        # However, for direct DB query:
+        query_result = db.query(BSBRecord.Bank).distinct().order_by(BSBRecord.Bank.desc()).all()
+
+        # query_result will be a list of tuples, e.g., [('Bank A',), ('Bank B',)]
+        # Extract the bank names into a flat list
+        bank_names = [item[0] for item in query_result if item[0] is not None]
+
+        if not bank_names:
+            logger.info("No bank names found in the database.")
+            # Return an empty list as per typical REST API design for "not found" list resources
+            # Or, if specific error handling for "no banks" is required by AC:
+            # raise HTTPException(status_code=404, detail="No banks found in the database")
+            # For now, returning an empty list is fine.
+            return BankListResponse(banks=[])
+
+        logger.info(f"Successfully retrieved {len(bank_names)} unique bank names.")
+        return BankListResponse(banks=bank_names)
+    except Exception as e:
+        logger.error(f"Error retrieving bank list: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error while retrieving bank list.")
 
 # --- Run with Uvicorn (for local testing) ---
 # You would typically run this using: uvicorn main:app --reload --app-dir bsb_checker_app
