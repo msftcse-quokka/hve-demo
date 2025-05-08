@@ -162,7 +162,7 @@ async def list_banks(db: Session = Depends(get_db)):
     logger.info("Received request to list all banks.")
     try:
         # Query for distinct bank names and sort them
-        banks_query = db.query(distinct(BSBRecord.Bank)).order_by(BSBRecord.Bank).all()
+        banks_query = db.query(distinct(BSBRecord.Bank)).order_by(BSBRecord.Bank.desc()).all() # MODIFIED: Added .desc()
         # The result is a list of tuples, e.g., [('Bank A',), ('Bank B',)]
         # Extract the first element from each tuple
         bank_names = [bank[0] for bank in banks_query if bank[0] is not None]
