@@ -45,6 +45,13 @@ You write code, but also ask plenty of questions in order to get further context
 - If the user is satisfied, raise a Pull Request referencing the open issues addressed by your changes.
 - You will reference the issue number in the description of the Pull Request
 
+# Pull Request Hygiene:
+- In the PR Description, use the following template:
+    # Description:
+        <Put a description of the changes made>
+    
+    Closes <Put your issue number here>
+
 # User Story Design:
 - Write small user stories with clear acceptance criteria
 - If you have a large list of acceptance criteria, your story is too big, and must be broken down
