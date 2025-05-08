@@ -3,7 +3,7 @@ import requests
 import pandas as pd
 import io
 from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks
-from sqlalchemy import create_engine, Column, String, MetaData, Table, inspect
+from sqlalchemy import create_engine, Column, String, MetaData, Table, inspect, distinct # Added distinct
 from sqlalchemy.orm import sessionmaker, Session, declarative_base
 from contextlib import contextmanager
 import logging
@@ -152,6 +152,34 @@ async def trigger_update_bsb(background_tasks: BackgroundTasks):
     logger.info("Received request to update BSB database.")
     background_tasks.add_task(update_bsb_database)
     return {"message": "BSB database update initiated in the background."}
+
+@app.get("/banks", response_model=list[str])
+async def list_banks(db: Session = Depends(get_db)):
+    """
+    Retrieves a list of all unique bank names from the database,
+    sorted alphabetically.
+    """
+    logger.info("Received request to list all banks.")
+    try:
+        # Query for distinct bank names and sort them
+        banks_query = db.query(distinct(BSBRecord.Bank)).order_by(BSBRecord.Bank).all()
+        # The result is a list of tuples, e.g., [('Bank A',), ('Bank B',)]
+        # Extract the first element from each tuple
+        bank_names = [bank[0] for bank in banks_query if bank[0] is not None]
+
+        if not bank_names:
+            logger.info("No bank names found in the database.")
+            # Return an empty list as per OpenAPI spec for list[str]
+            # If a 404 was desired, we'd raise HTTPException here.
+            # The AC says "error handling for cases where no banks are found"
+            # - returning an empty list is a valid way to handle this for a list endpoint.
+            return []
+
+        logger.info(f"Successfully retrieved {len(bank_names)} unique bank names.")
+        return bank_names
+    except Exception as e:
+        logger.error(f"Error retrieving bank list: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error while retrieving bank list.")
 
 @app.get("/bsb/{bsb_number}")
 async def get_bsb_details(bsb_number: str, db: Session = Depends(get_db)):
