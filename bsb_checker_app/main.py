@@ -3,7 +3,7 @@ import requests
 import pandas as pd
 import io
 from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks
-from sqlalchemy import create_engine, Column, String, MetaData, Table, inspect
+from sqlalchemy import create_engine, Column, String, MetaData, Table, inspect, 
 from sqlalchemy.orm import sessionmaker, Session, declarative_base
 from contextlib import contextmanager
 import logging
@@ -152,6 +152,26 @@ async def trigger_update_bsb(background_tasks: BackgroundTasks):
     logger.info("Received request to update BSB database.")
     background_tasks.add_task(update_bsb_database)
     return {"message": "BSB database update initiated in the background."}
+
+@app.get("/banks", response_model=dict, tags=["Banks"])
+async def list_banks(db: Session = Depends(get_db)):
+    """
+    Returns a list of all unique bank names in the BSB database, sorted alphabetically.
+    """
+    logger.info("Received request to list all unique banks.")
+    try:
+        # Query for distinct bank names, sorted ascending
+        stmt = select(distinct(BSBRecord.Bank)).order_by(asc(BSBRecord.Bank))
+        result = db.execute(stmt)
+        banks = [row[0] for row in result if row[0]]  # Filter out None or empty
+        logger.info(f"Found {len(banks)} unique banks.")
+        if not banks:
+            logger.warning("No banks found in the database.")
+            return {"banks": [], "message": "No banks found in the database."}
+        return {"banks": banks}
+    except Exception as e:
+        logger.error(f"Error retrieving banks: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error while retrieving banks.")
 
 @app.get("/bsb/{bsb_number}")
 async def get_bsb_details(bsb_number: str, db: Session = Depends(get_db)):
