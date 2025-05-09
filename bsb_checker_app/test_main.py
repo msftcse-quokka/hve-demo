@@ -67,8 +67,8 @@ def test_get_banks_success():
         assert response.status_code == 200
         data = response.json()
         assert "banks" in data
-        # Should return unique banks sorted alphabetically
-        assert data["banks"] == ["Bank A", "Bank B", "Bank C"]
+        # Should return unique banks sorted alphabetically in descending order
+        assert data["banks"] == ["Bank C", "Bank B", "Bank A"]
     finally:
         clear_test_data(db)
         db.close()
@@ -96,8 +96,8 @@ def test_get_banks_with_null_bank_name():
         assert response.status_code == 200
         data = response.json()
         assert "banks" in data
-        # Should return unique, non-null banks sorted alphabetically
-        assert data["banks"] == ["Bank A", "Bank B", "Bank C"]
+        # Should return unique, non-null banks sorted alphabetically in descending order
+        assert data["banks"] == ["Bank C", "Bank B", "Bank A"]
     finally:
         clear_test_data(db)
         db.close()

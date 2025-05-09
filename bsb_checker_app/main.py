@@ -192,13 +192,13 @@ async def get_bsb_details(bsb_number: str, db: Session = Depends(get_db)):
 async def get_all_banks(db: Session = Depends(get_db)):
     """
     Retrieves a list of all unique bank names from the BSB database,
-    sorted alphabetically.
+    sorted alphabetically in descending order.
     """
     logger.info("Received request to list all unique bank names.")
     try:
-        # Query for distinct bank names and sort them
+        # Query for distinct bank names and sort them in descending order
         # The BSBRecord.Bank is the correct column to query for bank names.
-        unique_banks_query = db.query(BSBRecord.Bank).distinct().order_by(BSBRecord.Bank)
+        unique_banks_query = db.query(BSBRecord.Bank).distinct().order_by(BSBRecord.Bank.desc())
         # Execute the query and fetch all results
         bank_records = unique_banks_query.all()
 
