@@ -153,6 +153,40 @@ async def trigger_update_bsb(background_tasks: BackgroundTasks):
     background_tasks.add_task(update_bsb_database)
     return {"message": "BSB database update initiated in the background."}
 
+@app.get("/banks")
+async def get_all_banks(db: Session = Depends(get_db)):
+    """
+    Retrieves a list of all unique bank names from the database,
+    sorted alphabetically in descending order.
+    """
+    logger.info("Received request to list all banks.")
+    try:
+        # Query for distinct bank names and sort them
+        # The distinct() method needs to be applied before order_by()
+        # and it should operate on the column itself.
+        # We also need to extract the first element from the tuple if it's returned as such.
+        query_result = db.query(BSBRecord.Bank).distinct().order_by(BSBRecord.Bank.desc()).all()
+
+        # query_result will be a list of tuples, e.g., [('Bank A',), ('Bank B',)]
+        # We need to extract the string from each tuple.
+        bank_names = [item[0] for item in query_result if item[0] is not None]
+
+        if not bank_names:
+            logger.warning("No bank names found in the database.")
+            # It's better to return an empty list and a 200 OK if no banks are found,
+            # unless the requirements strictly state to raise a 404.
+            # For now, let's return 200 with an empty list as per common practice.
+            # If a 404 is preferred, this can be changed to:
+            # raise HTTPException(status_code=404, detail="No banks found")
+            return [] # Or {"banks": []} if a specific JSON structure is preferred
+
+        logger.info(f"Successfully retrieved {len(bank_names)} unique bank names.")
+        return {"banks": bank_names}
+
+    except Exception as e:
+        logger.error(f"Error retrieving bank names: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error while retrieving bank names.")
+
 @app.get("/bsb/{bsb_number}")
 async def get_bsb_details(bsb_number: str, db: Session = Depends(get_db)):
     """
