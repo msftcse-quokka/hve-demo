@@ -7,6 +7,8 @@ from sqlalchemy import create_engine, Column, String, MetaData, Table, inspect
 from sqlalchemy.orm import sessionmaker, Session, declarative_base
 from contextlib import contextmanager
 import logging
+from pydantic import BaseModel
+from typing import List
 
 # --- Logging Setup ---
 logging.basicConfig(level=logging.INFO)
@@ -60,6 +62,10 @@ class BSBRecord(Base):
     # Use the name defined in the Table object above.
     Payments_Accepted = Column("Payments Accepted", String)
 
+
+# --- Pydantic Models (for response schema) ---
+class BankListResponse(BaseModel):
+    banks: List[str]
 
 # --- Dependency for DB Session ---
 def get_db():
@@ -181,6 +187,37 @@ async def get_bsb_details(bsb_number: str, db: Session = Depends(get_db)):
         "postCode": record.PostCode,
         "supportedPaymentSystem": record.Payments_Accepted # Use the mapped attribute name
     }
+
+@app.get("/banks", response_model=BankListResponse)
+async def get_all_banks(db: Session = Depends(get_db)):
+    """
+    Retrieves a list of all unique bank names from the BSB database,
+    sorted alphabetically.
+    """
+    logger.info("Received request to list all unique bank names.")
+    try:
+        # Query for distinct bank names and sort them
+        # The BSBRecord.Bank is the correct column to query for bank names.
+        unique_banks_query = db.query(BSBRecord.Bank).distinct().order_by(BSBRecord.Bank)
+        # Execute the query and fetch all results
+        bank_records = unique_banks_query.all()
+
+        # Extract the bank names from the query results
+        # Each 'record' in bank_records will be a tuple with one element (the bank name)
+        bank_names = [record[0] for record in bank_records if record[0] is not None]
+
+        if not bank_names:
+            logger.warning("No bank names found in the database.")
+            # Return an empty list instead of 404, as an empty list is a valid response
+            # when no banks are present, rather than an error.
+            # The API contract is to return a list of banks, and an empty list fulfills this.
+            return {"banks": []}
+
+        logger.info(f"Successfully retrieved {len(bank_names)} unique bank names.")
+        return {"banks": bank_names}
+    except Exception as e:
+        logger.error(f"Error retrieving bank list: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error while retrieving bank list.")
 
 # --- Run with Uvicorn (for local testing) ---
 # You would typically run this using: uvicorn main:app --reload --app-dir bsb_checker_app

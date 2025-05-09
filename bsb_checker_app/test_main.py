@@ -37,7 +37,7 @@ app.dependency_overrides[get_db] = override_get_db
 client = TestClient(app)
 
 # --- Test Data Setup ---
-def setup_test_data(db_session):
+def setup_test_data(db_session, include_null_bank=False):
     """Helper function to populate the test database."""
     db_session.query(BSBRecord).delete() # Clear existing data
     banks_to_add = [
@@ -46,6 +46,9 @@ def setup_test_data(db_session):
         BSBRecord(BSB='333-333', Bank='Bank B', Branch='Branch B1', Street='1 B St', Suburb='Bville', State='BS', PostCode='2000', Payments_Accepted='All'),
         BSBRecord(BSB='444-444', Bank='Bank A', Branch='Branch A2', Street='2 A St', Suburb='Aville', State='AS', PostCode='1001', Payments_Accepted='None'), # Duplicate Bank A
     ]
+    if include_null_bank:
+        banks_to_add.append(BSBRecord(BSB='555-555', Bank=None, Branch='Branch N', Street='Null St', Suburb='Nullville', State='NS', PostCode='0000', Payments_Accepted='All'))
+
     db_session.add_all(banks_to_add)
     db_session.commit()
 
@@ -81,6 +84,22 @@ def test_get_banks_empty_db():
         assert "banks" in data
         assert data["banks"] == [] # Expect an empty list
     finally:
+        db.close()
+
+def test_get_banks_with_null_bank_name():
+    """Test retrieving banks when one bank name is None (should be excluded)."""
+    db = TestingSessionLocal()
+    # Setup data including a record with a None bank name
+    setup_test_data(db, include_null_bank=True)
+    try:
+        response = client.get("/banks")
+        assert response.status_code == 200
+        data = response.json()
+        assert "banks" in data
+        # Should return unique, non-null banks sorted alphabetically
+        assert data["banks"] == ["Bank A", "Bank B", "Bank C"]
+    finally:
+        clear_test_data(db)
         db.close()
 
 # --- Test Cases for /bsb/{bsb_number} endpoint (Example - Keep existing tests if any) ---
