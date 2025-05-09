@@ -153,6 +153,24 @@ async def trigger_update_bsb(background_tasks: BackgroundTasks):
     background_tasks.add_task(update_bsb_database)
     return {"message": "BSB database update initiated in the background."}
 
+@app.get("/banks")
+async def get_all_banks(db: Session = Depends(get_db)):
+    """
+    Retrieves a list of all unique bank names sorted alphabetically.
+    """
+    logger.info("Received request to list all banks.")
+    banks_query = db.query(BSBRecord.Bank).distinct().order_by(BSBRecord.Bank).all()
+    
+    if not banks_query:
+        logger.warning("No banks found in the database.")
+        # Return an empty list instead of 404 to indicate no data but a successful query
+        return []
+
+    # Extract bank names from the query result (list of tuples)
+    bank_names = [bank[0] for bank in banks_query if bank[0]] # Ensure bank name is not None
+    logger.info(f"Returning {len(bank_names)} unique bank names.")
+    return bank_names
+
 @app.get("/bsb/{bsb_number}")
 async def get_bsb_details(bsb_number: str, db: Session = Depends(get_db)):
     """
