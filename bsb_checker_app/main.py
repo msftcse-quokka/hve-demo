@@ -3,7 +3,7 @@ import requests
 import pandas as pd
 import io
 from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks
-from sqlalchemy import create_engine, Column, String, MetaData, Table, inspect
+from sqlalchemy import create_engine, Column, String, MetaData, Table, inspect, desc
 from sqlalchemy.orm import sessionmaker, Session, declarative_base
 from contextlib import contextmanager
 import logging
@@ -156,10 +156,10 @@ async def trigger_update_bsb(background_tasks: BackgroundTasks):
 @app.get("/banks")
 async def get_all_banks(db: Session = Depends(get_db)):
     """
-    Retrieves a list of all unique bank names sorted alphabetically.
+    Retrieves a list of all unique bank names sorted alphabetically in descending order.
     """
     logger.info("Received request to list all banks.")
-    banks_query = db.query(BSBRecord.Bank).distinct().order_by(BSBRecord.Bank).all()
+    banks_query = db.query(BSBRecord.Bank).distinct().order_by(desc(BSBRecord.Bank)).all()
     
     if not banks_query:
         logger.warning("No banks found in the database.")
